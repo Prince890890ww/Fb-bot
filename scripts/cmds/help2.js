@@ -65,7 +65,7 @@ module.exports = {
       msg += `🐐 | GoatBot V2`; // its not decoy so change it if you want 
 
       const helpListImages = [
-        " https://tinyurl.com/yvqged2v",
+        "https://tinyurl.com/yvqged2v",
         "https://tinyurl.com/yobom6ex",
         "https://i.imgur.com/KhnL8U8.jpeg", // add image link here
         "https://i.imgur.com/5IRfh3C.jpeg",
@@ -111,7 +111,7 @@ module.exports = {
   ➡🌹 ${usage}
   ➡🌹 𝙉𝙤𝙩𝙚𝙨
   ➡🌹 𝙏𝙝𝙚 𝙘𝙤𝙣𝙩𝙚𝙣𝙩 𝙞𝙣𝙨𝙞𝙙𝙚 <𝙓𝙓𝙓𝙓𝙓> 𝙘𝙖𝙣 𝙗𝙚 𝙘𝙝𝙖𝙣𝙜𝙚𝙙
-  ➡🌹 𝙏𝙝𝙚 𝙘𝙤𝙣𝙩𝙚𝙣𝙩 𝙞𝙣𝙨𝙞𝙙𝙚 [𝙖|𝙗|𝙘] 𝙞𝙨 𝙖 𝙤𝙧 𝙗 𝙤𝙧 𝙘 \n✰✰✰✰✰✰✰✰✰✰\n 🔖 𝙚𝙙𝙞𝙩𝙚 𝙗𝙮 : 🌹AMEBO KWARA 🌹
+  ➡🌹 𝙏𝙝𝙚 𝙘𝙤𝙣𝙩𝙚𝙣𝙩 𝙞𝙣𝙨𝙞𝙙𝙚 [𝙖|𝙗|𝙘] 𝙞𝙨 𝙖 𝙤𝙧 𝙗 𝙤𝙧 𝙘 \n✰✰✰✰✰✰✰✰✰✰\n 🔖 𝙚𝙙𝙞𝙩𝙚 𝙗𝙮 : 🌹Raphael scholar🌹
   `;
 
         await message.reply(response);
