@@ -1,6 +1,7 @@
 const axios = require('axios');
 const rateLimit = new Map();
 const description = "";
+const globalPrefix = "!"; // Set your global prefix here
 
 module.exports.config = {
   name: "stacy",
@@ -34,7 +35,14 @@ module.exports.run = async function ({ api, args, event }) {
   const { threadID, messageID } = event;
   const inp = args.join(' ');
   const id = event.senderID;
-  const link = `https://character-ai-by-lance.onrender.com/api/chat?message=${encodeURIComponent(inp)}&chat_id=${id}&custom-ai-prompt=${description}`;
+
+  // Check for global prefix
+  if (!inp.startsWith(globalPrefix)) {
+    return;
+  }
+
+  const command = inp.slice(globalPrefix.length).trim();
+  const link = `https://character-ai-by-lance.onrender.com/api/chat?message=${encodeURIComponent(command)}&chat_id=${id}&custom-ai-prompt=${description}`;
 
   // Rate limiting
   if (rateLimit.has(id) && (Date.now() - rateLimit.get(id)) < 2000) {
@@ -42,11 +50,11 @@ module.exports.run = async function ({ api, args, event }) {
   }
   rateLimit.set(id, Date.now());
 
-  if (!inp) {
+  if (!command) {
     return api.sendMessage("Please provide a query.", threadID, messageID);
   }
 
-  if (inp.toLowerCase() === 'clear') {
+  if (command.toLowerCase() === 'clear') {
     try {
       const response = await axios.get(`https://character-ai-by-lance.onrender.com/api/history?cmd=yes&chat_id=${id}`);
       const message = response.data.message ? 'Successfully deleted chat history.' : 'Chat history not deleted.';
@@ -55,7 +63,7 @@ module.exports.run = async function ({ api, args, event }) {
       console.error(`Error: ${error.message}`);
       api.sendMessage("An error occurred while clearing chat history.", threadID, messageID);
     }
-  } else if (inp.toLowerCase() === 'help') {
+  } else if (command.toLowerCase() === 'help') {
     const helpMessage = `
       ** Command Help**
       - **chat [question]**: Ask Stacy a question.
