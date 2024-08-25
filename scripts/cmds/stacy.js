@@ -6,7 +6,7 @@ module.exports.config = {
   name: "stacy",
   aliases: ["stacy", "st", "chat"],
   haspermssion: 0,
-  version: 1.1,
+  version: 1.2,
   credits: "lance x Raphael ilom",
   cooldowns: 2,
   usePrefix: false,
