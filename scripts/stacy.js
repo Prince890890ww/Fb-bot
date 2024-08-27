@@ -9,7 +9,7 @@ module.exports.config = {
   version: 1.2,
   credits: "lance x Raphael ilom",
   cooldowns: 2,
-  usePrefix: true,
+  usePrefix: false,
   description: "stacy (query)",
   commandCategory: "AI",
   usages: "[question]"
