@@ -1,87 +1,94 @@
+const path = require('path');
+const Anthropic = require('@anthropic-ai/sdk');
 const axios = require('axios');
-const rateLimit = new Map();
-const description = "";
-const globalPrefix = "!"; // Set your global prefix here
+
+const AUTHOR_NAME = 'Raphael Ilom';
+
+const client = new Anthropic({
+    apiKey: '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'
+});
 
 module.exports.config = {
-  name: "stacy",
-  aliases: ["stacy", "st", "chat"],
-  haspermssion: 0,
-  version: 1.2,
-  credits: "lance x Raphael ilom",
-  cooldowns: 2,
-  usePrefix: false,
-  description: "stacy (query)",
-  commandCategory: "AI",
-  usages: "[question]"
+    name: "stacy",
+    haspermssion: 0,
+    version: 1.0,
+    credits: AUTHOR_NAME,
+    cooldowns: 2,
+    usePrefix: false,
+    description: "Stacy (query)",
+    commandCategory: "AI",
+    usages: "[question]"
 };
 
-module.exports.handleReply = async function ({ api, event }) {
-  const { messageID, threadID } = event;
-  const id = event.senderID;
-  const inp = event.body;
-  const link = `https://character-ai-by-lance.onrender.com/api/chat?message=${encodeURIComponent(inp)}&chat_id=${id}&custom-ai-prompt=${description}`;
+module.exports.handleReply = async function ({ api, event, handleReply }) {
+    const { messageID, threadID } = event;
+    const userMessage = event.body;
 
-  try {
-    const response = await axios.get(link);
-    api.sendMessage(response.data.text, threadID, messageID);
-  } catch (error) {
-    console.error(`Error: ${error.message}`);
-    api.sendMessage("An error occurred while processing your request.", threadID, messageID);
-  }
+    try {
+        const response = await client.messages.create({
+            model: 'claude-3-opus-20240229',
+            max_tokens: 1024,
+            messages: [{ role: 'user', content: userMessage }]
+        });
+        api.sendMessage(response.content, threadID, messageID);
+    } catch (error) {
+        api.sendMessage("Error: Unable to process your request.", threadID, messageID);
+    }
 };
 
 module.exports.run = async function ({ api, args, event }) {
-  const { threadID, messageID } = event;
-  const inp = args.join(' ');
-  const id = event.senderID;
+    const { threadID, messageID } = event;
+    const userMessage = args.join(' ');
 
-  // Check for global prefix
-  if (!inp.startsWith(globalPrefix)) {
-    return;
-  }
-
-  const command = inp.slice(globalPrefix.length).trim();
-  const link = `https://character-ai-by-lance.onrender.com/api/chat?message=${encodeURIComponent(command)}&chat_id=${id}&custom-ai-prompt=${description}`;
-
-  // Rate limiting
-  if (rateLimit.has(id) && (Date.now() - rateLimit.get(id)) < 2000) {
-    return api.sendMessage("Please wait a moment before sending another request.", threadID, messageID);
-  }
-  rateLimit.set(id, Date.now());
-
-  if (!command) {
-    return api.sendMessage("Please provide a query.", threadID, messageID);
-  }
-
-  if (command.toLowerCase() === 'clear') {
-    try {
-      const response = await axios.get(`https://character-ai-by-lance.onrender.com/api/history?cmd=yes&chat_id=${id}`);
-      const message = response.data.message ? 'Successfully deleted chat history.' : 'Chat history not deleted.';
-      api.sendMessage(message, threadID, messageID);
-    } catch (error) {
-      console.error(`Error: ${error.message}`);
-      api.sendMessage("An error occurred while clearing chat history.", threadID, messageID);
+    if (!userMessage) {
+        api.sendMessage("Error: Missing input.", threadID, messageID);
+        return;
     }
-  } else if (command.toLowerCase() === 'help') {
-    const helpMessage = `
-      ** Command Help**
-      - **chat [question]**: Ask Stacy a question.
-      - **chat clear**: Clear chat history.
-      - **chat help**: Show this help message.
-    `;
-    api.sendMessage(helpMessage, threadID, messageID);
-  } else {
+
     try {
-      const response = await axios.get(link);
-      api.sendMessage(response.data.text, threadID, messageID);
-      global.client.handleReply.push({
-        name: this.config.name,
-        author: event.senderID
-      });
+        const response = await client.messages.create({
+            model: 'claude-3-opus-20240229',
+            max_tokens: 1024,
+            messages: [{ role: 'user', content: userMessage }]
+        });
+        api.sendMessage(response.content, threadID, messageID);
+        global.client.handleReply.push({
+            name: this.config.name,
+            author: event.senderID
+        });
     } catch (error) {
-      console.error(`Error: ${error.message}`);
-      api.sendMessage("An error occurred while processing your request.", threadID, messageID);
+        api.sendMessage("Error: Unable to process your request.", threadID, messageID);
     }
-  }
 };
+
+async function main(userMessage) {
+    if (AUTHOR_NAME !== 'Raphael Ilom') {
+        console.error('Error: Author name has been changed. The script will not run.');
+        return;
+    }
+
+    try {
+        const response = await client.messages.create({
+            model: 'claude-3-opus-20240229',
+            max_tokens: 1024,
+            messages: [{ role: 'user', content: userMessage }]
+        });
+        onReply(response.content);
+
+        const fullPath = path.resolve(__dirname, 'Stacy.js');
+        console.log('Full path to the script:', fullPath);
+
+        const axiosResponse = await axios.get('https://api.example.com/data');
+        console.log('Data from Axios request:', axiosResponse.data);
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+function onReply(reply) {
+    console.log('Received reply from Stacy:', reply);
+}
+
+// Customize the user message here
+const userMessage = 'Hello, Stacy! How are you today?';
+main(userMessage);
