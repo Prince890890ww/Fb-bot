@@ -1,7 +1,7 @@
-module.exports = {
+  module.exports = {
   config: {
     name: "tts",
-    author: "Raphael scholar",
+    author: "",
     countDown: 7,
     role: 0,
     category: "media"
@@ -36,4 +36,4 @@ return message.reply(e.response?.data || e.message);
 }
 
 }
-};
+};￼Enter
