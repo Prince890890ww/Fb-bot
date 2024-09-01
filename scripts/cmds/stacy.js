@@ -1,5 +1,6 @@
-
-
+const axios = require('axios');
+const rateLimit = new Map();
+const description = "stacy,a wonderful bot to chat and play with, created by Lance & Raphael-scholar";
 
 module.exports.config = {
   name: "stacy",
