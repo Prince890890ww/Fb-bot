@@ -1,172 +1,95 @@
 const axios = require('axios');
 const rateLimit = new Map();
-const conversationHistory = new Map();
+const description = "You are Stacy, an AI assistant created by Anthropic to be helpful, harmless, and honest.";
 
-module.exports = {
-  config: {
-    name: "Stacy",
-    version: "1.0",
-    author: "Raphael",
-    countDown: 5,
-    role: 0,
-    shortDescription: "AI-powered chatbot",
-    longDescription: "An AI-powered chatbot with various features including conversation, image generation, and weather information.",
-    category: "ai",
-    guide: {
-      en: "{p}Stacy [message/command]"
-    }
-  },
+module.exports.config = {
+  name: "stacy",
+  aliases: ["stacy", "st", "chat"],
+  hasPermission: 0,
+  version: 1.3,
+  credits: "lance x Raphael ilom, enhanced by [Raphael Scholar]",
+  cooldowns: 2,
+  usePrefix: false,
+  description: "Chat with Stacy, an AI assistant",
+  commandCategory: "AI",
+  usages: "[question]"
+};
 
-  onStart: async function ({ api, event, args }) {
-    const { threadID, messageID, senderID } = event;
-    const input = args.join(" ");
+const ANTHROPIC_API_KEY = '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';
+const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/conversations';
 
-    if (!input) {
-      return api.sendMessage("Please provide a message or command.", threadID, messageID);
-    }
+async function getAnthropicResponse(message, chatHistory) {
+  try {
+    const response = await axios.post(ANTHROPIC_API_URL, {
+      prompt: `Human: ${message}\n\nAssistant: `,
+      model: "claude-2",
+      max_tokens_to_sample: 300,
+      stop_sequences: ["\n\nHuman:"],
+      temperature: 0.8,
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': ANTHROPIC_API_KEY,
+      }
+    });
 
-    await this.run({ api, args, event });
-  },
+    return response.data.completion.trim();
+  } catch (error) {
+    console.error('Error calling Anthropic API:', error);
+    throw error;
+  }
+}
 
-  run: async function ({ api, args, event }) {
-    const { threadID, messageID, senderID } = event;
-    const input = args.join(' ').trim();
+module.exports.handleReply = async function ({ api, event, handleReply }) {
+  const { messageID, threadID, senderID, body } = event;
+  
+  if (handleReply.author !== senderID) return;
 
-    if (rateLimit.has(senderID) && (Date.now() - rateLimit.get(senderID)) < 2000) {
-      return api.sendMessage("Please wait a moment before sending another request.", threadID, messageID);
-    }
-    rateLimit.set(senderID, Date.now());
+  try {
+    const response = await getAnthropicResponse(body, []);
+    api.sendMessage(response, threadID, messageID);
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    api.sendMessage("An error occurred while processing your request.", threadID, messageID);
+  }
+};
 
-    const command = input.toLowerCase().split(' ')[0];
+module.exports.run = async function ({ api, args, event }) {
+  const { threadID, messageID, senderID } = event;
+  const inp = args.join(' ');
 
-    switch (command) {
-      case 'clear':
-        try {
-          await this.sendRequest('/history', { cmd: 'yes', chat_id: senderID });
-          conversationHistory.delete(senderID);
-          api.sendMessage('Successfully cleared chat history.', threadID, messageID);
-        } catch (error) {
-          api.sendMessage(error.message, threadID, messageID);
-        }
-        break;
+  // Rate limiting
+  if (rateLimit.has(senderID) && (Date.now() - rateLimit.get(senderID)) < 2000) {
+    return api.sendMessage("Please wait a moment before sending another request.", threadID, messageID);
+  }
+  rateLimit.set(senderID, Date.now());
 
-      case 'help':
-        const helpMessage = `
-          **Stacy Command Help**
-          - **Stacy [question]**: Ask the chatbot a question.
-          - **Stacy clear**: Clear chat history.
-          - **Stacy help**: Show this help message.
-          - **Stacy history**: Show conversation history.
-          - **Stacy image [prompt]**: Generate an image based on the prompt.
-          - **Stacy weather [location]**: Get current weather information.
-          - **Stacy forecast [location]**: Get extended weather forecast.
-        `;
-        api.sendMessage(helpMessage, threadID, messageID);
-        break;
+  if (!inp) {
+    return api.sendMessage("Please provide a query.", threadID, messageID);
+  }
 
-      case 'history':
-        const history = conversationHistory.get(senderID) || [];
-        const historyMessage = history.map(msg => `${msg.role}: ${msg.content}`).join('\n\n');
-        api.sendMessage(historyMessage || 'No conversation history available.', threadID, messageID);
-        break;
-
-      case 'image':
-        const imagePrompt = args.slice(1).join(' ');
-        if (!imagePrompt) {
-          return api.sendMessage("Please provide a prompt for image generation.", threadID, messageID);
-        }
-        try {
-          const imageUrl = await this.generateImage(imagePrompt);
-          api.sendMessage({ attachment: await global.utils.getStreamFromURL(imageUrl) }, threadID, messageID);
-        } catch (error) {
-          api.sendMessage(error.message, threadID, messageID);
-        }
-        break;
-
-      case 'weather':
-        const location = args.slice(1).join(' ');
-        if (!location) {
-          return api.sendMessage("Please provide a location for weather information.", threadID, messageID);
-        }
-        try {
-          const weatherInfo = await this.getWeather(location);
-          api.sendMessage(weatherInfo, threadID, messageID);
-        } catch (error) {
-          api.sendMessage(error.message, threadID, messageID);
-        }
-        break;
-
-      case 'forecast':
-        const forecastLocation = args.slice(1).join(' ');
-        if (!forecastLocation) {
-          return api.sendMessage("Please provide a location for the weather forecast.", threadID, messageID);
-        }
-        try {
-          const forecastInfo = await this.getWeatherForecast(forecastLocation);
-          api.sendMessage(forecastInfo, threadID, messageID);
-        } catch (error) {
-          api.sendMessage(error.message, threadID, messageID);
-        }
-        break;
-
-      default:
-        try {
-          const response = await this.chatWithAI(input, senderID);
-          api.sendMessage(response, threadID, messageID);
-        } catch (error) {
-          api.sendMessage(error.message, threadID, messageID);
-        }
-        break;
-    }
-  },
-
-  chatWithAI: async function (input, senderID) {
-    const history = conversationHistory.get(senderID) || [];
-    history.push({ role: 'user', content: input });
-
+  if (inp.toLowerCase() === 'help') {
+    const helpMessage = `
+      ** Command Help**
+      - **stacy [question]**: Ask Stacy a question.
+      - **stacy help**: Show this help message.
+    `;
+    api.sendMessage(helpMessage, threadID, messageID);
+  } else {
     try {
-      const response = await this.sendRequest('/chat', { chat: input, chat_id: senderID });
-      history.push({ role: 'assistant', content: response });
-      conversationHistory.set(senderID, history);
-      return response;
+      const response = await getAnthropicResponse(inp, []);
+      api.sendMessage(response, threadID, (error, info) => {
+        if (!error) {
+          global.client.handleReply.push({
+            name: this.config.name,
+            messageID: info.messageID,
+            author: senderID
+          });
+        }
+      });
     } catch (error) {
-      throw new Error('Failed to get a response from the AI.');
-    }
-  },
-
-  generateImage: async function (prompt) {
-    try {
-      const response = await this.sendRequest('/image', { prompt });
-      return response.image_url;
-    } catch (error) {
-      throw new Error('Failed to generate image.');
-    }
-  },
-
-  getWeather: async function (location) {
-    try {
-      const response = await this.sendRequest('/weather', { location });
-      return `Current weather in ${location}:\n${response}`;
-    } catch (error) {
-      throw new Error('Failed to get weather information.');
-    }
-  },
-
-  getWeatherForecast: async function (location) {
-    try {
-      const response = await this.sendRequest('/forecast', { location });
-      return `Weather forecast for ${location}:\n${response}`;
-    } catch (error) {
-      throw new Error('Failed to get weather forecast.');
-    }
-  },
-
-  sendRequest: async function (endpoint, data) {
-    try {
-      const response = await axios.post(`https://api.example.com${endpoint}`, data);
-      return response.data;
-    } catch (error) {
-      throw new Error('Failed to send request to the API.');
+      console.error(`Error: ${error.message}`);
+      api.sendMessage("An error occurred while processing your request.", threadID, messageID);
     }
   }
 };
