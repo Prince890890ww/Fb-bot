@@ -1,7 +1,7 @@
 {
   "facebookAccount": {
-    "email": "olanrewajuoluwagbemisol@gmail.com",
-    "password": "08180146181200610",
+    "email": "",
+    "password": "",
     "2FASecret": "",
     "i_user": "",
     "proxy": null,
@@ -18,6 +18,7 @@
   },
   "adminBot": [
     "61553871285563",
+    "100090443419982",
     "100083670401783",
     "100091893014482"
   ],
@@ -26,7 +27,7 @@
     "whiteListIds": [],
     "notes": "if you enable this feature, only the ids in the whiteListIds section can use the bot"
   },
-  "nickNameBot": "Ilom 😃",
+  "nickNameBot": "Sparki 😃",
   "prefix": "-",
   "database": {
     "type": "sqlite",
